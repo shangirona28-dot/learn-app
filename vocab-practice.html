@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vocab Practice — Spanish & Japanese</title>
+<style>
+  :root{
+    --bg:#f6f5f2; --card:#ffffff; --ink:#262420; --muted:#7a766e;
+    --accent:#b5532c; --accent2:#3c6e58; --line:#e4e0d8; --danger:#b3413a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--ink); min-height:100vh;
+  }
+  header{
+    padding:20px 16px 12px; text-align:center; border-bottom:1px solid var(--line);
+    background:var(--card);
+  }
+  header h1{margin:0 0 4px; font-size:1.3rem;}
+  header p{margin:0; color:var(--muted); font-size:.85rem;}
+  nav{
+    display:flex; justify-content:center; gap:6px; padding:10px 16px;
+    background:var(--card); border-bottom:1px solid var(--line); flex-wrap:wrap;
+  }
+  nav button{
+    border:1px solid var(--line); background:var(--bg); color:var(--ink);
+    padding:8px 14px; border-radius:20px; font-size:.85rem; cursor:pointer;
+  }
+  nav button.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  main{max-width:520px; margin:0 auto; padding:20px 16px 60px;}
+  section{display:none;}
+  section.active{display:block;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:18px; margin-bottom:16px;
+  }
+  .lang-toggle, .dir-toggle{display:flex; gap:8px; margin-bottom:16px;}
+  .lang-toggle button, .dir-toggle button{
+    flex:1; padding:10px; border-radius:10px; border:1px solid var(--line);
+    background:var(--card); font-size:.9rem; cursor:pointer;
+  }
+  .lang-toggle button.active, .dir-toggle button.active{background:var(--accent2); color:#fff; border-color:var(--accent2);}
+  .stat-row{display:flex; justify-content:space-between; font-size:.85rem; color:var(--muted); margin-bottom:10px;}
+  .flash{
+    text-align:center; padding:36px 16px; min-height:160px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  }
+  .flash .word{font-size:1.8rem; font-weight:600;}
+  .flash .reading{color:var(--muted); font-size:.95rem;}
+  .flash .answer{font-size:1.2rem; color:var(--accent2); margin-top:6px;}
+  .flash .empty{color:var(--muted); font-size:.95rem;}
+  .row{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:14px;}
+  button.primary{
+    background:var(--accent); color:#fff; border:none; padding:10px 18px;
+    border-radius:10px; font-size:.9rem; cursor:pointer;
+  }
+  button.secondary{
+    background:transparent; border:1px solid var(--line); color:var(--ink);
+    padding:10px 18px; border-radius:10px; font-size:.9rem; cursor:pointer;
+  }
+  button.good{background:var(--accent2); color:#fff; border:none; padding:10px 18px; border-radius:10px; font-size:.9rem; cursor:pointer;}
+  button.bad{background:var(--danger); color:#fff; border:none; padding:10px 18px; border-radius:10px; font-size:.9rem; cursor:pointer;}
+  form{display:flex; flex-direction:column; gap:10px;}
+  label{font-size:.8rem; color:var(--muted);}
+  input, select{
+    padding:10px; border:1px solid var(--line); border-radius:8px; font-size:.95rem;
+    background:#fff; color:var(--ink);
+  }
+  table{width:100%; border-collapse:collapse; font-size:.85rem;}
+  th, td{text-align:left; padding:8px 6px; border-bottom:1px solid var(--line);}
+  td.actions{white-space:nowrap; text-align:right;}
+  td.actions button{
+    border:none; background:none; cursor:pointer; color:var(--muted); font-size:.85rem; margin-left:6px;
+  }
+  td.actions button.del{color:var(--danger);}
+  .empty-list{color:var(--muted); font-size:.85rem; text-align:center; padding:20px 0;}
+  .box-pill{
+    display:inline-block; font-size:.7rem; padding:2px 7px; border-radius:10px;
+    background:var(--bg); border:1px solid var(--line); color:var(--muted);
+  }
+  .small-actions{display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;}
+  .small-actions button{font-size:.78rem; padding:6px 10px; border-radius:8px; border:1px solid var(--line); background:var(--bg); cursor:pointer;}
+  textarea{width:100%; min-height:90px; font-family:monospace; font-size:.8rem; padding:8px; border:1px solid var(--line); border-radius:8px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗣️ Vocab Practice</h1>
+  <p>Spanish &amp; Japanese — listen, recall, repeat</p>
+</header>
+
+<nav>
+  <button data-tab="practice" class="active">Practice</button>
+  <button data-tab="kana">Kana</button>
+  <button data-tab="manage">Manage</button>
+  <button data-tab="stats">Stats</button>
+</nav>
+
+<main>
+
+  <!-- PRACTICE -->
+  <section id="practice" class="active">
+    <div class="lang-toggle">
+      <button data-lang="es" class="active">Spanish</button>
+      <button data-lang="ja">Japanese</button>
+    </div>
+
+    <div class="dir-toggle" id="directionToggle">
+      <button data-dir="word" class="active">Word → Meaning</button>
+      <button data-dir="meaning">Meaning → Word</button>
+    </div>
+
+    <div class="card">
+      <div class="stat-row">
+        <span id="dueCount">0 due</span>
+        <span id="totalCount">0 total</span>
+      </div>
+      <div class="flash" id="flashArea">
+        <div class="empty">No words yet. Add some in Manage.</div>
+      </div>
+      <div class="row" id="flashControls"></div>
+    </div>
+  </section>
+
+  <!-- KANA -->
+  <section id="kana">
+    <div class="dir-toggle" id="scriptToggle">
+      <button data-script="hiragana" class="active">Hiragana</button>
+      <button data-script="katakana">Katakana</button>
+      <button data-script="mixed">Mixed</button>
+    </div>
+
+    <div class="dir-toggle" id="kanaDirectionToggle">
+      <button data-kanadir="char" class="active">Kana → Romaji</button>
+      <button data-kanadir="romaji">Romaji → Kana</button>
+    </div>
+
+    <div class="card">
+      <div class="stat-row">
+        <span id="kanaDueCount">0 due</span>
+        <span id="kanaTotalCount">0 total</span>
+      </div>
+      <div class="flash" id="kanaFlashArea">
+        <div class="empty">Loading…</div>
+      </div>
+      <div class="row" id="kanaFlashControls"></div>
+    </div>
+  </section>
+
+  <!-- MANAGE -->
+  <section id="manage">
+    <div class="card">
+      <div class="stat-row"><strong>Cloud sync (GitHub Gist)</strong></div>
+      <p style="font-size:.8rem;color:var(--muted);margin:0 0 10px;">
+        Keeps your words &amp; kana synced across devices via a private GitHub Gist on your account.
+        Create a token at github.com/settings/tokens (fine-grained, permission "Gists: Read and write" only) and paste it here once.
+      </p>
+      <input type="password" id="syncTokenInput" placeholder="GitHub personal access token">
+      <div class="small-actions" style="margin-top:10px; align-items:center;">
+        <button id="syncNowBtn">Sync now</button>
+        <span id="syncStatus" class="box-pill">Not connected</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <form id="addForm">
+        <div>
+          <label>Language</label>
+          <select id="formLang">
+            <option value="es">Spanish</option>
+            <option value="ja">Japanese</option>
+          </select>
+        </div>
+        <div>
+          <label>Word / phrase (target language)</label>
+          <input id="formWord" placeholder="e.g. gato / 猫" required>
+        </div>
+        <div>
+          <label>Reading (optional — romaji/furigana, mainly for Japanese)</label>
+          <input id="formReading" placeholder="e.g. neko">
+        </div>
+        <div>
+          <label>Meaning (English)</label>
+          <input id="formMeaning" placeholder="e.g. cat" required>
+        </div>
+        <button type="submit" class="primary">Add word</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="stat-row"><strong>Your vocabulary</strong></div>
+      <table>
+        <thead><tr><th>Word</th><th>Meaning</th><th>Lang</th><th></th></tr></thead>
+        <tbody id="vocabTableBody"></tbody>
+      </table>
+      <div id="emptyListMsg" class="empty-list" style="display:none;">No words added yet.</div>
+
+      <div class="small-actions">
+        <button id="exportBtn">Export backup (.json)</button>
+        <button id="importBtn">Import backup</button>
+        <input type="file" id="importFile" accept=".json" style="display:none;">
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section id="stats">
+    <div class="card">
+      <div class="stat-row"><strong>Spanish</strong></div>
+      <div id="esStats"></div>
+    </div>
+    <div class="card">
+      <div class="stat-row"><strong>Japanese</strong></div>
+      <div id="jaStats"></div>
+    </div>
+    <div class="card">
+      <p style="font-size:.8rem;color:var(--muted);margin:0;">
+        Box 1 = just learned / missed recently. Box 5 = well known.
+        Words move up a box when you mark "Got it", and reset to box 1 when you mark "Missed it".
+        Higher boxes come up for review less often.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function(){
+  const STORAGE_KEY = "vocabPracticeData_v1";
+  const BOX_INTERVALS_DAYS = [0, 1, 3, 7, 14, 30]; // index = box number (1-5), box0 unused
+
+  const SEED_JA = [
+    ["こんにちは","konnichiwa","hello"],
+    ["おはようございます","ohayou gozaimasu","good morning"],
+    ["こんばんは","konbanwa","good evening"],
+    ["さようなら","sayounara","goodbye"],
+    ["ありがとう","arigatou","thank you"],
+    ["すみません","sumimasen","excuse me / sorry"],
+    ["はい","hai","yes"],
+    ["いいえ","iie","no"],
+    ["お願いします","onegai shimasu","please"],
+    ["はじめまして","hajimemashite","nice to meet you"],
+    ["一","ichi","one"],
+    ["二","ni","two"],
+    ["三","san","three"],
+    ["四","yon","four"],
+    ["五","go","five"],
+    ["水","mizu","water"],
+    ["猫","neko","cat"],
+    ["犬","inu","dog"],
+    ["食べる","taberu","to eat"],
+    ["飲む","nomu","to drink"],
+    ["学校","gakkou","school"],
+    ["友達","tomodachi","friend"],
+    ["家","ie","house / home"],
+    ["今日","kyou","today"],
+    ["明日","ashita","tomorrow"]
+  ];
+
+  const KANA_HIRAGANA = [
+    ["あ","a"],["い","i"],["う","u"],["え","e"],["お","o"],
+    ["か","ka"],["き","ki"],["く","ku"],["け","ke"],["こ","ko"],
+    ["さ","sa"],["し","shi"],["す","su"],["せ","se"],["そ","so"],
+    ["た","ta"],["ち","chi"],["つ","tsu"],["て","te"],["と","to"],
+    ["な","na"],["に","ni"],["ぬ","nu"],["ね","ne"],["の","no"],
+    ["は","ha"],["ひ","hi"],["ふ","fu"],["へ","he"],["ほ","ho"],
+    ["ま","ma"],["み","mi"],["む","mu"],["め","me"],["も","mo"],
+    ["や","ya"],["ゆ","yu"],["よ","yo"],
+    ["ら","ra"],["り","ri"],["る","ru"],["れ","re"],["ろ","ro"],
+    ["わ","wa"],["を","wo"],["ん","n"]
+  ];
+  const KANA_KATAKANA = [
+    ["ア","a"],["イ","i"],["ウ","u"],["エ","e"],["オ","o"],
+    ["カ","ka"],["キ","ki"],["ク","ku"],["ケ","ke"],["コ","ko"],
+    ["サ","sa"],["シ","shi"],["ス","su"],["セ","se"],["ソ","so"],
+    ["タ","ta"],["チ","chi"],["ツ","tsu"],["テ","te"],["ト","to"],
+    ["ナ","na"],["ニ","ni"],["ヌ","nu"],["ネ","ne"],["ノ","no"],
+    ["ハ","ha"],["ヒ","hi"],["フ","fu"],["ヘ","he"],["ホ","ho"],
+    ["マ","ma"],["ミ","mi"],["ム","mu"],["メ","me"],["モ","mo"],
+    ["ヤ","ya"],["ユ","yu"],["ヨ","yo"],
+    ["ラ","ra"],["リ","ri"],["ル","ru"],["レ","re"],["ロ","ro"],
+    ["ワ","wa"],["ヲ","wo"],["ン","n"]
+  ];
+  const KANA_STORAGE_KEY = "kanaPracticeData_v1";
+
+  let state = load();
+  let currentLang = "es";
+  let cardDirection = "word"; // "word" = show target word first, "meaning" = show English first
+  let session = []; // shuffled due words for current practice session
+  let sessionIndex = 0;
+  let showingAnswer = false;
+
+  let kanaScript = "hiragana";
+  let kanaDirection = "char"; // "char" = show kana first, "romaji" = show romaji first
+  let kanaState = loadKana();
+  let kanaSession = [];
+  let kanaIndex = 0;
+  let kanaShowingAnswer = false;
+
+  function load(){
+    let data;
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      data = raw ? JSON.parse(raw) : { words: [] };
+    }catch(e){
+      data = { words: [] };
+    }
+    const hasJapanese = data.words.some(w => w.lang === 'ja');
+    if(!hasJapanese){
+      SEED_JA.forEach(([word, reading, meaning])=>{
+        data.words.push({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+          lang: 'ja', word, reading, meaning,
+          box: 1, due: new Date().toISOString().slice(0,10)
+        });
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+    return data;
+  }
+  function save(){
+    state.updatedAt = Date.now();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    scheduleSync();
+  }
+
+  function loadKana(){
+    let data;
+    try{
+      const raw = localStorage.getItem(KANA_STORAGE_KEY);
+      data = raw ? JSON.parse(raw) : { chars: [] };
+    }catch(e){
+      data = { chars: [] };
+    }
+    const hasHiragana = data.chars.some(c => c.script === 'hiragana');
+    const hasKatakana = data.chars.some(c => c.script === 'katakana');
+    const today = new Date().toISOString().slice(0,10);
+    if(!hasHiragana){
+      KANA_HIRAGANA.forEach(([char, romaji])=>{
+        data.chars.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,7), script: 'hiragana', char, romaji, box: 1, due: today });
+      });
+    }
+    if(!hasKatakana){
+      KANA_KATAKANA.forEach(([char, romaji])=>{
+        data.chars.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,7), script: 'katakana', char, romaji, box: 1, due: today });
+      });
+    }
+    if(!hasHiragana || !hasKatakana){
+      localStorage.setItem(KANA_STORAGE_KEY, JSON.stringify(data));
+    }
+    return data;
+  }
+  function saveKana(){
+    kanaState.updatedAt = Date.now();
+    localStorage.setItem(KANA_STORAGE_KEY, JSON.stringify(kanaState));
+    scheduleSync();
+  }
+
+  // ---------- Cloud sync (GitHub Gist) ----------
+  const SYNC_CONFIG_KEY = "githubSyncConfig_v1";
+  const VOCAB_FILE = "vocab-data.json";
+  const KANA_FILE = "kana-data.json";
+  let syncTimer = null;
+
+  function getSyncConfig(){
+    try{ return JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY)) || {}; }
+    catch(e){ return {}; }
+  }
+  function saveSyncConfig(cfg){
+    localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(cfg));
+  }
+  function setSyncStatus(text){
+    const el = document.getElementById('syncStatus');
+    if(el) el.textContent = text;
+  }
+
+  function scheduleSync(){
+    const cfg = getSyncConfig();
+    if(!cfg.token) return;
+    if(syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(()=>{ pushToGist(); }, 1500);
+  }
+
+  async function pushToGist(){
+    const cfg = getSyncConfig();
+    if(!cfg.token) return;
+    setSyncStatus('Syncing…');
+    const body = {
+      description: 'Vocab Practice App data (auto-synced)',
+      public: false,
+      files: {
+        [VOCAB_FILE]: { content: JSON.stringify(state) },
+        [KANA_FILE]: { content: JSON.stringify(kanaState) }
+      }
+    };
+    try{
+      const url = cfg.gistId ? `https://api.github.com/gists/${cfg.gistId}` : 'https://api.github.com/gists';
+      const res = await fetch(url, {
+        method: cfg.gistId ? 'PATCH' : 'POST',
+        headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json' },
+        body: JSON.stringify(body)
+      });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if(!cfg.gistId){
+        cfg.gistId = data.id;
+        saveSyncConfig(cfg);
+      }
+      setSyncStatus('Synced just now ✓');
+    }catch(err){
+      setSyncStatus('Sync failed — will retry on next change');
+    }
+  }
+
+  async function pullFromGist(){
+    const cfg = getSyncConfig();
+    if(!cfg.token || !cfg.gistId) return;
+    setSyncStatus('Checking cloud…');
+    try{
+      const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+        headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json' }
+      });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const vocabFile = data.files && data.files[VOCAB_FILE];
+      const kanaFile = data.files && data.files[KANA_FILE];
+      if(vocabFile && vocabFile.content){
+        const cloudState = JSON.parse(vocabFile.content);
+        if((cloudState.updatedAt || 0) > (state.updatedAt || 0)){
+          state = cloudState;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+      }
+      if(kanaFile && kanaFile.content){
+        const cloudKana = JSON.parse(kanaFile.content);
+        if((cloudKana.updatedAt || 0) > (kanaState.updatedAt || 0)){
+          kanaState = cloudKana;
+          localStorage.setItem(KANA_STORAGE_KEY, JSON.stringify(kanaState));
+        }
+      }
+      setSyncStatus('Synced ✓');
+    }catch(err){
+      setSyncStatus('Could not reach cloud (using local data)');
+    }
+  }
+
+  function uid(){
+    return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  }
+  function todayStr(){
+    return new Date().toISOString().slice(0,10);
+  }
+  function addDays(dateStr, days){
+    const d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0,10);
+  }
+
+  // ---------- Navigation ----------
+  document.querySelectorAll('nav button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('main > section').forEach(s=>s.classList.remove('active'));
+      document.getElementById(btn.dataset.tab).classList.add('active');
+      if(btn.dataset.tab === 'manage') renderTable();
+      if(btn.dataset.tab === 'stats') renderStats();
+      if(btn.dataset.tab === 'practice') startSession();
+      if(btn.dataset.tab === 'kana') startKanaSession();
+    });
+  });
+
+  document.querySelectorAll('.lang-toggle button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.lang-toggle button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentLang = btn.dataset.lang;
+      startSession();
+    });
+  });
+
+  document.querySelectorAll('#directionToggle button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#directionToggle button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      cardDirection = btn.dataset.dir;
+      startSession();
+    });
+  });
+
+  document.querySelectorAll('#scriptToggle button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#scriptToggle button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      kanaScript = btn.dataset.script;
+      startKanaSession();
+    });
+  });
+
+  document.querySelectorAll('#kanaDirectionToggle button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#kanaDirectionToggle button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      kanaDirection = btn.dataset.kanadir;
+      startKanaSession();
+    });
+  });
+
+  // ---------- Add word ----------
+  document.getElementById('addForm').addEventListener('submit', e=>{
+    e.preventDefault();
+    const word = document.getElementById('formWord').value.trim();
+    const reading = document.getElementById('formReading').value.trim();
+    const meaning = document.getElementById('formMeaning').value.trim();
+    const lang = document.getElementById('formLang').value;
+    if(!word || !meaning) return;
+    state.words.push({
+      id: uid(), lang, word, reading, meaning,
+      box: 1, due: todayStr()
+    });
+    save();
+    e.target.reset();
+    document.getElementById('formLang').value = lang;
+    renderTable();
+  });
+
+  // ---------- Manage table ----------
+  function renderTable(){
+    const body = document.getElementById('vocabTableBody');
+    body.innerHTML = '';
+    const words = state.words.slice().sort((a,b)=> a.lang.localeCompare(b.lang) || a.word.localeCompare(b.word));
+    document.getElementById('emptyListMsg').style.display = words.length ? 'none' : 'block';
+    words.forEach(w=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(w.word)}${w.reading ? ` <span style="color:var(--muted);">(${escapeHtml(w.reading)})</span>` : ''}</td>
+        <td>${escapeHtml(w.meaning)}</td>
+        <td><span class="box-pill">${w.lang === 'es' ? 'ES' : 'JA'} · box ${w.box}</span></td>
+        <td class="actions"><button class="del" data-id="${w.id}">delete</button></td>
+      `;
+      body.appendChild(tr);
+    });
+    body.querySelectorAll('button.del').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        state.words = state.words.filter(w => w.id !== b.dataset.id);
+        save();
+        renderTable();
+      });
+    });
+  }
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------- Sync UI ----------
+  document.getElementById('syncTokenInput').addEventListener('change', e=>{
+    const cfg = getSyncConfig();
+    cfg.token = e.target.value.trim();
+    saveSyncConfig(cfg);
+    if(cfg.token){
+      pullFromGist().then(()=>{
+        renderTable(); renderStats(); updateCounts(); updateKanaCounts();
+        pushToGist();
+      });
+    } else {
+      setSyncStatus('Not connected — add a token to enable sync');
+    }
+  });
+  document.getElementById('syncNowBtn').addEventListener('click', ()=>{
+    pullFromGist().then(()=>{
+      renderTable(); renderStats(); updateCounts(); updateKanaCounts();
+      return pushToGist();
+    });
+  });
+
+  // ---------- Export / Import ----------
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'vocab-backup.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+  document.getElementById('importBtn').addEventListener('click', ()=>{
+    document.getElementById('importFile').click();
+  });
+  document.getElementById('importFile').addEventListener('change', e=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        const data = JSON.parse(reader.result);
+        if(data && Array.isArray(data.words)){
+          state = data;
+          save();
+          renderTable();
+          alert('Import complete.');
+        } else {
+          alert('That file does not look like a valid backup.');
+        }
+      }catch(err){
+        alert('Could not read that file.');
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // ---------- Practice / spaced repetition ----------
+  function dueWords(lang){
+    const today = todayStr();
+    return state.words.filter(w => w.lang === lang && w.due <= today);
+  }
+  function allWordsForLang(lang){
+    return state.words.filter(w => w.lang === lang);
+  }
+
+  function startSession(){
+    const due = dueWords(currentLang);
+    const pool = due.length ? due : allWordsForLang(currentLang); // if nothing due, practice everything
+    session = shuffle(pool.slice());
+    sessionIndex = 0;
+    showingAnswer = false;
+    updateCounts();
+    renderFlash();
+  }
+  function shuffle(arr){
+    for(let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i+1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  function updateCounts(){
+    document.getElementById('dueCount').textContent = dueWords(currentLang).length + ' due';
+    document.getElementById('totalCount').textContent = allWordsForLang(currentLang).length + ' total';
+  }
+
+  function currentWord(){
+    if(sessionIndex >= session.length) return null;
+    return session[sessionIndex];
+  }
+
+  function renderFlash(){
+    const area = document.getElementById('flashArea');
+    const controls = document.getElementById('flashControls');
+    const w = currentWord();
+
+    if(!allWordsForLang(currentLang).length){
+      area.innerHTML = `<div class="empty">No ${currentLang === 'es' ? 'Spanish' : 'Japanese'} words yet. Add some in Manage.</div>`;
+      controls.innerHTML = '';
+      return;
+    }
+    if(!w){
+      area.innerHTML = `<div class="empty">🎉 Session complete. Nothing left due right now.</div>`;
+      controls.innerHTML = `<button class="secondary" id="restartBtn">Practice again</button>`;
+      document.getElementById('restartBtn').addEventListener('click', startSession);
+      return;
+    }
+
+    const isMeaningFirst = cardDirection === 'meaning';
+    const promptText = isMeaningFirst ? w.meaning : w.word;
+    const promptReading = isMeaningFirst ? '' : w.reading;
+    const answerText = isMeaningFirst
+      ? (w.word + (w.reading ? ` (${w.reading})` : ''))
+      : w.meaning;
+
+    area.innerHTML = `
+      <div class="word">${escapeHtml(promptText)}</div>
+      ${promptReading ? `<div class="reading">${escapeHtml(promptReading)}</div>` : ''}
+      ${showingAnswer ? `<div class="answer">${escapeHtml(answerText)}</div>` : ''}
+    `;
+
+    if(!showingAnswer){
+      controls.innerHTML = isMeaningFirst
+        ? `<button class="primary" id="revealBtn">Show answer</button>`
+        : `<button class="secondary" id="speakBtn">🔊 Speak</button>
+           <button class="primary" id="revealBtn">Show meaning</button>`;
+      if(document.getElementById('speakBtn')){
+        document.getElementById('speakBtn').addEventListener('click', ()=>speak(w));
+      }
+      document.getElementById('revealBtn').addEventListener('click', ()=>{
+        showingAnswer = true;
+        renderFlash();
+      });
+    } else {
+      controls.innerHTML = `
+        <button class="secondary" id="speakBtn">🔊 Speak</button>
+        <button class="bad" id="noBtn">❌ No</button>
+        <button class="good" id="yesBtn">✅ Yes</button>
+      `;
+      document.getElementById('speakBtn').addEventListener('click', ()=>speak(w));
+      document.getElementById('noBtn').addEventListener('click', ()=>grade(w,false));
+      document.getElementById('yesBtn').addEventListener('click', ()=>grade(w,true));
+    }
+  }
+
+  function grade(w, correct){
+    if(correct){
+      w.box = Math.min(w.box + 1, 5);
+    } else {
+      w.box = 1;
+    }
+    w.due = addDays(todayStr(), BOX_INTERVALS_DAYS[w.box]);
+    save();
+    sessionIndex++;
+    if(!correct){
+      // "No" — bring this word back later in today's session, not just on a future day,
+      // so you keep seeing words you don't know until you get them right.
+      const offset = 3 + Math.floor(Math.random() * 3); // reinsert 3-5 cards ahead
+      const insertAt = Math.min(session.length, sessionIndex + offset);
+      session.splice(insertAt, 0, w);
+    }
+    showingAnswer = false;
+    updateCounts();
+    renderFlash();
+  }
+
+  function speak(w){
+    if(!('speechSynthesis' in window)){
+      alert('Speech playback is not supported in this browser.');
+      return;
+    }
+    const utter = new SpeechSynthesisUtterance(w.word);
+    utter.lang = w.lang === 'es' ? 'es-ES' : 'ja-JP';
+    utter.rate = 0.9;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
+  }
+
+  // ---------- Kana practice / spaced repetition ----------
+  function matchingKanaForms(romaji){
+    const h = KANA_HIRAGANA.find(([ch, r]) => r === romaji);
+    const k = KANA_KATAKANA.find(([ch, r]) => r === romaji);
+    return [h ? h[0] : null, k ? k[0] : null].filter(Boolean);
+  }
+  function dueKana(script){
+    const today = todayStr();
+    return kanaState.chars.filter(c => (script === 'mixed' || c.script === script) && c.due <= today);
+  }
+  function allKana(script){
+    return kanaState.chars.filter(c => script === 'mixed' || c.script === script);
+  }
+
+  function startKanaSession(){
+    const due = dueKana(kanaScript);
+    const pool = due.length ? due : allKana(kanaScript);
+    kanaSession = shuffle(pool.slice());
+    kanaIndex = 0;
+    kanaShowingAnswer = false;
+    updateKanaCounts();
+    renderKanaFlash();
+  }
+  function updateKanaCounts(){
+    document.getElementById('kanaDueCount').textContent = dueKana(kanaScript).length + ' due';
+    document.getElementById('kanaTotalCount').textContent = allKana(kanaScript).length + ' total';
+  }
+  function currentKanaChar(){
+    if(kanaIndex >= kanaSession.length) return null;
+    return kanaSession[kanaIndex];
+  }
+
+  function renderKanaFlash(){
+    const area = document.getElementById('kanaFlashArea');
+    const controls = document.getElementById('kanaFlashControls');
+    const c = currentKanaChar();
+
+    if(!allKana(kanaScript).length){
+      area.innerHTML = `<div class="empty">No characters loaded.</div>`;
+      controls.innerHTML = '';
+      return;
+    }
+    if(!c){
+      area.innerHTML = `<div class="empty">🎉 Session complete. Nothing left due right now.</div>`;
+      controls.innerHTML = `<button class="secondary" id="kanaRestartBtn">Practice again</button>`;
+      document.getElementById('kanaRestartBtn').addEventListener('click', startKanaSession);
+      return;
+    }
+
+    const isRomajiFirst = kanaDirection === 'romaji';
+    const promptText = isRomajiFirst ? c.romaji : c.char;
+    const answerText = isRomajiFirst
+      ? (kanaScript === 'mixed' ? matchingKanaForms(c.romaji).join(' / ') : c.char)
+      : c.romaji;
+
+    area.innerHTML = `
+      <div class="word">${escapeHtml(promptText)}</div>
+      ${kanaShowingAnswer ? `<div class="answer">${escapeHtml(answerText)}</div>` : ''}
+    `;
+
+    if(!kanaShowingAnswer){
+      controls.innerHTML = isRomajiFirst
+        ? `<button class="primary" id="kanaRevealBtn">Show kana</button>`
+        : `<button class="secondary" id="kanaSpeakBtn">🔊 Speak</button>
+           <button class="primary" id="kanaRevealBtn">Show romaji</button>`;
+      if(document.getElementById('kanaSpeakBtn')){
+        document.getElementById('kanaSpeakBtn').addEventListener('click', ()=>speakKana(c));
+      }
+      document.getElementById('kanaRevealBtn').addEventListener('click', ()=>{
+        kanaShowingAnswer = true;
+        renderKanaFlash();
+      });
+    } else {
+      controls.innerHTML = `
+        <button class="secondary" id="kanaSpeakBtn">🔊 Speak</button>
+        <button class="bad" id="kanaNoBtn">❌ No</button>
+        <button class="good" id="kanaYesBtn">✅ Yes</button>
+      `;
+      document.getElementById('kanaSpeakBtn').addEventListener('click', ()=>speakKana(c));
+      document.getElementById('kanaNoBtn').addEventListener('click', ()=>gradeKana(c,false));
+      document.getElementById('kanaYesBtn').addEventListener('click', ()=>gradeKana(c,true));
+    }
+  }
+
+  function gradeKana(c, correct){
+    if(correct){
+      c.box = Math.min(c.box + 1, 5);
+    } else {
+      c.box = 1;
+    }
+    c.due = addDays(todayStr(), BOX_INTERVALS_DAYS[c.box]);
+    saveKana();
+    kanaIndex++;
+    if(!correct){
+      const offset = 3 + Math.floor(Math.random() * 3);
+      const insertAt = Math.min(kanaSession.length, kanaIndex + offset);
+      kanaSession.splice(insertAt, 0, c);
+    }
+    kanaShowingAnswer = false;
+    updateKanaCounts();
+    renderKanaFlash();
+  }
+
+  function speakKana(c){
+    if(!('speechSynthesis' in window)){
+      alert('Speech playback is not supported in this browser.');
+      return;
+    }
+    const utter = new SpeechSynthesisUtterance(c.char);
+    utter.lang = 'ja-JP';
+    utter.rate = 0.85;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
+  }
+
+  // ---------- Stats ----------
+  function renderStats(){
+    ['es','ja'].forEach(lang=>{
+      const words = allWordsForLang(lang);
+      const el = document.getElementById(lang === 'es' ? 'esStats' : 'jaStats');
+      if(!words.length){
+        el.innerHTML = `<div class="empty-list">No words yet.</div>`;
+        return;
+      }
+      const counts = [0,0,0,0,0,0];
+      words.forEach(w => counts[w.box]++);
+      const due = dueWords(lang).length;
+      el.innerHTML = `
+        <div class="stat-row"><span>Total words</span><span>${words.length}</span></div>
+        <div class="stat-row"><span>Due now</span><span>${due}</span></div>
+        ${[1,2,3,4,5].map(b => `<div class="stat-row"><span>Box ${b}</span><span>${counts[b]}</span></div>`).join('')}
+      `;
+    });
+  }
+
+  // ---------- Init ----------
+  (function initSync(){
+    const cfg = getSyncConfig();
+    if(cfg.token){
+      document.getElementById('syncTokenInput').value = cfg.token;
+      setSyncStatus(cfg.gistId ? 'Connected — checking…' : 'Token saved, creating cloud copy…');
+      if(cfg.gistId){
+        pullFromGist().then(()=>{
+          renderTable(); renderStats(); updateCounts(); updateKanaCounts(); renderFlash(); renderKanaFlash();
+        });
+      } else {
+        pushToGist();
+      }
+    } else {
+      setSyncStatus('Not connected — add a token to enable sync');
+    }
+  })();
+  updateCounts();
+  renderFlash();
+})();
+</script>
+
+</body>
+</html>
