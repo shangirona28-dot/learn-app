@@ -338,6 +338,7 @@
   let session = []; // shuffled due words for current practice session
   let sessionIndex = 0;
   let showingAnswer = false;
+  let lastAutoSpokenVocabKey = null;
 
   let kanaScript = "hiragana";
   let kanaDirection = "char"; // "char" = show kana first, "romaji" = show romaji first
@@ -769,6 +770,17 @@
       ${showingAnswer ? `<div class="answer">${escapeHtml(answerText)}</div>` : ''}
     `;
 
+    // Auto-play when the card opens showing the target-language word (not the
+    // English meaning) — keyed by session position so a word re-queued after a
+    // miss still speaks again later, but toggling reveal on the same card doesn't.
+    if(!isMeaningFirst){
+      const autoKey = sessionIndex + ':' + w.id;
+      if(lastAutoSpokenVocabKey !== autoKey){
+        lastAutoSpokenVocabKey = autoKey;
+        speak(w);
+      }
+    }
+
     if(!showingAnswer){
       controls.innerHTML = isMeaningFirst
         ? `<button class="primary" id="revealBtn">Show answer</button>`
@@ -814,16 +826,47 @@
     renderFlash();
   }
 
-  function speak(w){
+  // ---------- Voice selection ----------
+  // Browsers fall back to the default (often English) voice if no matching-language
+  // voice is found, even with utter.lang set correctly — so we look up an installed
+  // voice explicitly. Voice lists load asynchronously on first use in many browsers.
+  let voicesCache = null;
+  function getVoices(){
+    const list = window.speechSynthesis.getVoices();
+    if(list && list.length) voicesCache = list;
+    return voicesCache || [];
+  }
+  if('speechSynthesis' in window){
+    window.speechSynthesis.addEventListener('voiceschanged', getVoices);
+  }
+  function pickVoice(langPrefix){
+    const voices = getVoices();
+    return voices.find(v => v.lang && v.lang.toLowerCase() === langPrefix.toLowerCase())
+      || voices.find(v => v.lang && v.lang.toLowerCase().startsWith(langPrefix.slice(0,2).toLowerCase()))
+      || null;
+  }
+  function speakText(text, langTag, rate){
     if(!('speechSynthesis' in window)){
       alert('Speech playback is not supported in this browser.');
       return;
     }
-    const utter = new SpeechSynthesisUtterance(w.word);
-    utter.lang = w.lang === 'es' ? 'es-ES' : 'ja-JP';
-    utter.rate = 0.9;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = langTag;
+    utter.rate = rate;
+    const voice = pickVoice(langTag);
+    if(voice){
+      utter.voice = voice;
+    } else {
+      // No matching voice installed on this device — language tag alone may not be
+      // enough; warn once so the user knows to install a voice rather than thinking it's a bug.
+      console.warn(`No installed voice found for ${langTag}; using device default, which may mispronounce.`);
+    }
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utter);
+  }
+
+  function speak(w){
+    speakText(w.word, w.lang === 'es' ? 'es-ES' : 'ja-JP', 0.9);
   }
 
   // ---------- Kana practice / spaced repetition ----------
@@ -930,15 +973,7 @@
   }
 
   function speakKana(c){
-    if(!('speechSynthesis' in window)){
-      alert('Speech playback is not supported in this browser.');
-      return;
-    }
-    const utter = new SpeechSynthesisUtterance(c.char);
-    utter.lang = 'ja-JP';
-    utter.rate = 0.85;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
+    speakText(c.char, 'ja-JP', 0.85);
   }
 
   // ---------- Stats ----------
