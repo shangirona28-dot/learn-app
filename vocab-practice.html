@@ -450,6 +450,44 @@
     syncTimer = setTimeout(()=>{ pushToGist(); }, 1500);
   }
 
+  async function findExistingGist(token){
+    try{
+      const res = await fetch('https://api.github.com/gists', {
+        headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github+json' }
+      });
+      if(!res.ok) return null;
+      const list = await res.json();
+      const match = list.find(g => g.files && g.files[VOCAB_FILE]);
+      return match ? match.id : null;
+    }catch(e){ return null; }
+  }
+
+  // Connects a token: if this account already has a sync gist (e.g. set up on another
+  // device), link to it and pull its data instead of creating a duplicate gist.
+  async function connectSync(token){
+    const cfg = getSyncConfig();
+    cfg.token = token;
+    saveSyncConfig(cfg);
+    if(!token){
+      setSyncStatus('Not connected — add a token to enable sync');
+      return;
+    }
+    if(cfg.gistId){
+      await pullFromGist();
+    } else {
+      setSyncStatus('Looking for existing synced data…');
+      const existingId = await findExistingGist(token);
+      if(existingId){
+        cfg.gistId = existingId;
+        saveSyncConfig(cfg);
+        await pullFromGist();
+      } else {
+        await pushToGist();
+      }
+    }
+    renderTable(); renderStats(); updateCounts(); updateKanaCounts(); renderFlash(); renderKanaFlash();
+  }
+
   async function pushToGist(){
     const cfg = getSyncConfig();
     if(!cfg.token) return;
@@ -623,17 +661,7 @@
 
   // ---------- Sync UI ----------
   document.getElementById('syncTokenInput').addEventListener('change', e=>{
-    const cfg = getSyncConfig();
-    cfg.token = e.target.value.trim();
-    saveSyncConfig(cfg);
-    if(cfg.token){
-      pullFromGist().then(()=>{
-        renderTable(); renderStats(); updateCounts(); updateKanaCounts();
-        pushToGist();
-      });
-    } else {
-      setSyncStatus('Not connected — add a token to enable sync');
-    }
+    connectSync(e.target.value.trim());
   });
   document.getElementById('syncNowBtn').addEventListener('click', ()=>{
     pullFromGist().then(()=>{
@@ -938,14 +966,8 @@
     const cfg = getSyncConfig();
     if(cfg.token){
       document.getElementById('syncTokenInput').value = cfg.token;
-      setSyncStatus(cfg.gistId ? 'Connected — checking…' : 'Token saved, creating cloud copy…');
-      if(cfg.gistId){
-        pullFromGist().then(()=>{
-          renderTable(); renderStats(); updateCounts(); updateKanaCounts(); renderFlash(); renderKanaFlash();
-        });
-      } else {
-        pushToGist();
-      }
+      setSyncStatus(cfg.gistId ? 'Connected — checking…' : 'Token saved, looking for cloud data…');
+      connectSync(cfg.token);
     } else {
       setSyncStatus('Not connected — add a token to enable sync');
     }
